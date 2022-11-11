@@ -60,7 +60,7 @@ services:
 
       - traefik.http.services.whoami.loadbalancer.server.port=80
   node-exporter:
-    image: prom/node-exporter:v1.3.1
+    image: prom/node-exporter:v1.4.0
     container_name: node-exporter
     networks:
       - traefik
