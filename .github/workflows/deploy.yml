@@ -30,9 +30,9 @@ jobs:
             cd /srv/${{ github.repository }}
             touch .htpasswd
             htpasswd -bB .htpasswd ${{ secrets.BASIC_AUTH_USER }} ${{ secrets.BASIC_AUTH_PASSWORD }}
-            docker compose --env-file .env.dev pull
-            docker compose --env-file .env.dev down
-            docker compose --env-file .env.dev up -d
+            docker compose --env-file .env.prod pull
+            docker compose --env-file .env.prod down
+            docker compose --env-file .env.prod up -d
           host: ${{ env.HOST }}
           port: 22
           username: root
