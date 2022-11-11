@@ -1,0 +1,86 @@
+- name: Init all servers
+  hosts: all
+  remote_user: root
+
+  tasks:
+    - name: Add GitHub deploy key
+      authorized_key:
+        user: root
+        state: present
+        manage_dir: yes
+        key: "{{ lookup('file', './ssh/github.pub') }}"
+
+    - name: Upgrade the OS
+      apt:
+        update_cache: yes
+        upgrade: dist
+        autoremove: yes
+
+    - name: Install apache2-utils for "htpasswd" command
+      apt:
+        name: apache2-utils
+
+    - name: Install ca-certificates, curl, gnupg and lsb-release for Docker
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+
+    - name: Create /etc/apt/keyrings directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+
+    - name: Add GIT stable repository from PPA
+      apt_repository:
+        repo: ppa:git-core/ppa
+
+    - name: Install git
+      apt:
+        name: git
+
+    - name: Add Docker GPG apt Key
+      shell: 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --yes --dearmor -o /etc/apt/keyrings/docker.gpg'
+
+    - name: Add Docker Repository
+      shell: 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
+
+    - name: Install Docker
+      apt:
+        name:
+          - containerd.io
+          - docker-compose-plugin
+          - docker-ce-cli
+          - docker-ce
+        state: latest
+        update_cache: yes
+
+    - name: Restart systemd-networkd service
+      service:
+        name: systemd-networkd
+        state: restarted
+
+    - name: Appending the group 'docker' to the root
+      user:
+        name: root
+        shell: /bin/bash
+        groups: docker
+        append: yes
+
+    - name: Copy SSHD config
+      copy:
+        src: ./sshd/key.conf
+        dest: /etc/ssh/sshd_config.d/key.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Restart sshd service
+      service:
+        name: sshd
+        state: restarted
+
+    - name: Create Docker traefik network
+      shell: docker network create traefik || true
