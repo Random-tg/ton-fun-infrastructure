@@ -4,8 +4,8 @@
 ansible-playbook -i playbook/inventory/all.yaml playbook/init.yaml
 ```
 
-## Up on server
-Run GitHub action manually
+## Deploy on server
+[GitHub action](https://github.com/kokkekpek/ton-fun-infrastructure/actions/workflows/deploy.yml)
 
 ## Up local
 ```shell
