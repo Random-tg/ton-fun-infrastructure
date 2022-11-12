@@ -24,7 +24,7 @@ jobs:
           overwrite: true
 
       - name: Docker compose up
-        uses: appleboy/ssh-action@v0.1.3
+        uses: appleboy/ssh-action@v0.1.5
         with:
           script: |
             cd /srv/${{ github.repository }}
