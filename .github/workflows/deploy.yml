@@ -12,7 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2.5.0
 
-      - name: Copy files on server
+      - name: Copy files to server
         uses: appleboy/scp-action@v0.1.3
         with:
           host: ${{ env.HOST }}
