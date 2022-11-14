@@ -47,6 +47,7 @@ services:
   whoami:
     image: traefik/whoami:v1.8.0
     container_name: whoami
+    restart: always
     networks:
       - traefik
     labels:
@@ -65,6 +66,7 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.4.0
     container_name: node-exporter
+    restart: always
     networks:
       - traefik
     volumes:
