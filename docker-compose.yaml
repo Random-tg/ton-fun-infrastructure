@@ -7,6 +7,7 @@ services:
     restart: always
     networks:
       - traefik
+      - victoria-metrics
     ports:
       - "80:80"
       - "443:443"
@@ -69,6 +70,7 @@ services:
     restart: always
     networks:
       - traefik
+      - victoria-metrics
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -91,11 +93,103 @@ services:
 
       - traefik.http.services.nodeExporter.loadbalancer.server.port=9100
 
+  victoria-metrics:
+    image: victoriametrics/victoria-metrics:v1.83.1
+    container_name: victoria-metrics
+    restart: always
+    networks:
+      - traefik
+      - victoria-metrics
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.victoriaMetrics.rule=Host(`${VICTORIA_METRICS}`)
+      - traefik.http.routers.victoriaMetrics.service=victoriaMetrics
+      - traefik.http.routers.victoriaMetrics.entryPoints=web
+
+      - traefik.http.routers.victoriaMetricsSecure.rule=Host(`${VICTORIA_METRICS}`)
+      - traefik.http.routers.victoriaMetricsSecure.service=victoriaMetrics
+      - traefik.http.routers.victoriaMetricsSecure.entryPoints=webSecure
+      - traefik.http.routers.victoriaMetricsSecure.tls.certResolver=letsEncrypt
+
+      - traefik.http.services.victoriaMetrics.loadbalancer.server.port=8428
+    volumes:
+      - victoria-metrics:/storage
+    command:
+      - "--storageDataPath=/storage"
+      - "--httpListenAddr=:8428"
+
+  vmagent:
+    image: victoriametrics/vmagent:v1.80.0
+    container_name: vmagent
+    restart: always
+    networks:
+      - traefik
+      - victoria-metrics
+    depends_on:
+      - victoria-metrics
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.vmagent.rule=Host(`${VMAGENT}`)
+      - traefik.http.routers.vmagent.service=vmagent
+      - traefik.http.routers.vmagent.entryPoints=web
+
+      - traefik.http.routers.vmagentSecure.rule=Host(`${VMAGENT}`)
+      - traefik.http.routers.vmagentSecure.service=vmagent
+      - traefik.http.routers.vmagentSecure.entryPoints=webSecure
+      - traefik.http.routers.vmagentSecure.tls.certResolver=letsEncrypt
+
+      - traefik.http.services.vmagent.loadbalancer.server.port=8429
+    volumes:
+      - vmagent:/vmagentdata
+      - ./docker/vmagent/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--promscrape.config=/etc/prometheus/prometheus.yml"
+      - "--remoteWrite.url=http://victoria-metrics:8428/api/v1/write"
+
+  grafana:
+    user: root
+    image: grafana/grafana:9.2.4
+    container_name: grafana
+    restart: always
+    networks:
+      - traefik
+      - victoria-metrics
+    depends_on:
+      - victoria-metrics
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=Host(`${GRAFANA}`)
+      - traefik.http.routers.grafana.service=grafana
+      - traefik.http.routers.grafana.entryPoints=web
+
+      - traefik.http.routers.grafanaSecure.rule=Host(`${GRAFANA}`)
+      - traefik.http.routers.grafanaSecure.service=grafana
+      - traefik.http.routers.grafanaSecure.entryPoints=webSecure
+      - traefik.http.routers.grafanaSecure.tls.certResolver=letsEncrypt
+
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    environment:
+      - "GF_LOG_MODE=console file"
+    volumes:
+      - grafana-lib:/var/lib/grafana
+      - grafana-log:/var/log/grafana
+      - ./docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./docker/grafana/dashboards/node-full-exporter.json:/var/lib/grafana/dashboards/node-full-exporter.json
+      - ./docker/grafana/dashboards/victoria-metrics.json:/var/lib/grafana/dashboards/victoria-metrics.json
+      - ./docker/grafana/dashboards/vmagent.json:/var/lib/grafana/dashboards/vmagent.json
+      - ./docker/grafana/dashboards/grafana.json:/var/lib/grafana/dashboards/grafana.json
+
 networks:
   traefik:
     external: true
     name: traefik
+  victoria-metrics:
 
 volumes:
   traefik-acme:
   traefik-log:
+  victoria-metrics:
+  vmagent:
+  grafana-lib:
+  grafana-log:
