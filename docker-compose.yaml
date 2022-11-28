@@ -93,6 +93,31 @@ services:
 
       - traefik.http.services.nodeExporter.loadbalancer.server.port=9100
 
+  tempo:
+    image: grafana/tempo:1.5.0
+    container_name: tempo
+    restart: always
+    command:
+      - "-config.file=/etc/tempo.yaml"
+    networks:
+      traefik:
+      victoria-metrics:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.tempo.rule=Host(`${TEMPO}`)
+      - traefik.http.routers.tempo.service=grafana
+      - traefik.http.routers.tempo.entryPoints=web
+
+      - traefik.http.routers.tempoSecure.rule=Host(`${TEMPO}`)
+      - traefik.http.routers.tempoSecure.service=grafana
+      - traefik.http.routers.tempoSecure.entryPoints=webSecure
+      - traefik.http.routers.tempoSecure.tls.certResolver=letsEncrypt
+
+      - traefik.http.services.tempo.loadbalancer.server.port=3200
+    volumes:
+      - tempo:/tmp/tempo
+      - ./docker/tempo/tempo.yaml:/etc/tempo.yaml
+
   victoria-metrics:
     image: victoriametrics/victoria-metrics:v1.83.1
     container_name: victoria-metrics
@@ -191,5 +216,6 @@ volumes:
   traefik-log:
   victoria-metrics:
   vmagent:
+  tempo:
   grafana-lib:
   grafana-log:

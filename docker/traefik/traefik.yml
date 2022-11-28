@@ -116,3 +116,15 @@ metrics:
     # Entry point used to expose metrics
     # @see https://doc.traefik.io/traefik/observability/metrics/prometheus/#entrypoint
     entryPoint: metrics
+
+# Visualize the Requests Flow
+# @see https://doc.traefik.io/traefik/observability/tracing/overview
+tracing:
+
+  # To enable the Zipkin tracer
+  # @see https://doc.traefik.io/traefik/observability/tracing/zipkin
+  zipkin:
+
+    # HTTP endpoint used to send data
+    # @see https://doc.traefik.io/traefik/observability/tracing/zipkin/#httpendpoint
+    httpEndpoint: http://tempo:9411/api/v2/spans
